@@ -72,7 +72,13 @@ func main() {
 	}
 	fmt.Println("Connected!")
 
-	// Reading data from the file
+	fmt.Println("Emptying database")
+	_, err = db.Exec("DELETE FROM album")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	DATA, _ = ReadingDataFromFiles(`./tmp/albums.txt`)
 
 	// Inserting data into the table 'album' in the database
@@ -81,13 +87,14 @@ func main() {
 		iLog.Fatalf("Error occured during inserting data into the db: '%v'\n", err)
 	}
 
-	// Get information from the db
 	artistWork, err := GetDataByAuthor("Marilin Manson")
 	if err != nil {
 		fmt.Println("An error occured: ", err)
-	} else {
-		fmt.Println("Artist work: ", artistWork)
 	}
+	for _, album := range artistWork {
+		fmt.Println(album)
+	}
+	fmt.Println()
 
 	http.HandleFunc("/", myHandler)
 	err = http.ListenAndServe(":8080", nil)
