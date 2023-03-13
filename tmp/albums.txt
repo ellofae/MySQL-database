@@ -1,1 +1,5 @@
-[02/Jun/2023:20:49:46 +0200] | 13.65 | We are the chaos | Marlilyn Manson
+[02/Jun/2005:20:49:46 +0200] | 13.65 | We are the chaos | Marilin Manson
+[13/Dec/2008:20:49:46 +0200] | 19.28 | Heaven Upside Down | Marilin Manson
+[28/Apr/2011:20:49:46 +0200] | 23.15 | The Pale Emperor | Marilin Manson
+
+

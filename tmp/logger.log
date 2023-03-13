@@ -1,2 +1,7 @@
 records-database:2023/03/13 21:51:44 main.go:64: Not a correct price format passed in the file './tmp/albums.txt'
 records-database:2023/03/13 21:51:48 main.go:64: Not a correct price format passed in the file './tmp/albums.txt'
+records-database:2023/03/13 22:09:58 main.go:117: Not a correct price format passed in the file './tmp/albums.txt'
+records-database:2023/03/13 22:11:16 main.go:117: Not a correct price format passed in the file './tmp/albums.txt'
+records-database:2023/03/13 22:11:41 main.go:117: Not a correct price format passed in the file './tmp/albums.txt'
+records-database:2023/03/13 22:12:08 main.go:117: Not a correct price format passed in the file './tmp/albums.txt'
+records-database:2023/03/13 22:12:35 main.go:117: Not a correct price format passed in the file './tmp/albums.txt'

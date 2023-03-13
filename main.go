@@ -5,11 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,14 +20,22 @@ import (
 var db *sql.DB
 var iLog *log.Logger
 var logFilePath = `./tmp/logger.log`
+var templateFile = `html.gohtml`
 
 var DATA []Album
 
 type Album struct {
+	ID          int
 	ReleaseDate string
-	Price       float32
+	Price       string
 	Title       string
 	Author      string
+}
+
+func myHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Host: %s Path: %s\n", r.Host, r.URL.Path)
+	myT := template.Must(template.ParseGlob(templateFile))
+	myT.ExecuteTemplate(w, templateFile, DATA)
 }
 
 func main() {
@@ -64,15 +73,31 @@ func main() {
 	fmt.Println("Connected!")
 
 	// Reading data from the file
-	_, _ = ReadingDataFromFiles(`./tmp/albums.txt`)
+	DATA, _ = ReadingDataFromFiles(`./tmp/albums.txt`)
 
 	// Inserting data into the table 'album' in the database
 	err = InsertDataIntoDBFromFile()
 	if err != nil {
 		iLog.Fatalf("Error occured during inserting data into the db: '%v'\n", err)
 	}
+
+	// Get information from the db
+	artistWork, err := GetDataByAuthor("Marilin Manson")
+	if err != nil {
+		fmt.Println("An error occured: ", err)
+	} else {
+		fmt.Println("Artist work: ", artistWork)
+	}
+
+	http.HandleFunc("/", myHandler)
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
+// Reading data from files and writing it into the struct slice
 func ReadingDataFromFiles(filenames ...string) ([]Album, error) {
 	for _, filename := range filenames {
 		f, err := os.Open(filename)
@@ -92,7 +117,7 @@ func ReadingDataFromFiles(filenames ...string) ([]Album, error) {
 				continue
 			}
 
-			lineSplited := strings.Split(line, "|")
+			lineSplited := strings.Split(line, " | ")
 			for _, value := range lineSplited {
 				value = strings.TrimRight(value, " ")
 			}
@@ -101,18 +126,14 @@ func ReadingDataFromFiles(filenames ...string) ([]Album, error) {
 				continue
 			}
 
-			var price float64
-			price, err = strconv.ParseFloat(lineSplited[1], 64)
-			if err != nil {
-				price = -1
-				iLog.Printf("Not a correct price format passed in the file '%s'\n", filename)
-			}
+			author := lineSplited[3]
+			author = author[:len(author)-1]
 
 			newAlbum := Album{
 				ReleaseDate: lineSplited[0],
-				Price:       float32(price),
+				Price:       lineSplited[1],
 				Title:       lineSplited[2],
-				Author:      lineSplited[3],
+				Author:      author,
 			}
 			DATA = append(DATA, newAlbum)
 		}
@@ -120,6 +141,7 @@ func ReadingDataFromFiles(filenames ...string) ([]Album, error) {
 	return DATA, nil
 }
 
+// Parsing date to the desired format
 func checkDate(date []string) error {
 	r := regexp.MustCompile(`.*\[(\d\d\/\w+/\d\d\d\d:\d\d:\d\d:\d\d.*)\].*`)
 	if r.MatchString(date[0]) {
@@ -140,6 +162,7 @@ func checkDate(date []string) error {
 	}
 }
 
+// Inserting data from the slice of structs into the table of the database
 func InsertDataIntoDBFromFile() error {
 	for _, albumData := range DATA {
 		_, err := db.Exec("INSERT INTO album (released, price, title, author) VALUES (?,?,?,?)", albumData.ReleaseDate, albumData.Price, albumData.Title, albumData.Author)
@@ -151,10 +174,34 @@ func InsertDataIntoDBFromFile() error {
 	return nil
 }
 
+// Inserting data struct into the table of the database
 func InsertDataIntoDB(album Album) error {
 	_, err := db.Exec("INSERT INTO album (released, price, title, author) VALUES (?,?,?,?)", album.ReleaseDate, album.Price, album.Title, album.Author)
 	if err != nil {
 		return fmt.Errorf("Insertion error: %v", err)
 	}
 	return nil
+}
+
+func GetDataByAuthor(name string) ([]Album, error) {
+	var artistData []Album
+
+	rows, err := db.Query("SELECT * FROM album WHERE author = ?", name)
+	if err != nil {
+		return nil, fmt.Errorf("Artist '%s' was not found", name)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var temp Album
+		if err = rows.Scan(&temp.ID, &temp.ReleaseDate, &temp.Price, &temp.Title, &temp.Author); err != nil {
+			return nil, fmt.Errorf("Error during scanning data: %w", err)
+		}
+		artistData = append(artistData, temp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("Error happened while scanning data: %w", err)
+	}
+	return artistData, nil
 }
