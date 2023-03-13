@@ -73,7 +73,8 @@ func main() {
 	fmt.Println("Connected!")
 
 	fmt.Println("Emptying database")
-	_, err = db.Exec("DELETE FROM album")
+	// 	_, err = db.Exec("DELETE FROM album")
+	_, err = db.Exec("TRUNCATE album")
 	if err != nil {
 		fmt.Println(err)
 		return
